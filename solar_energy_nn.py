@@ -1,4 +1,4 @@
-# Based off code found here http://tflearn.org/tutorials/quickstart.html and here https://github.com/AshitakaLax/WeatherNN/blob/master/weathercategoried.py
+
 from __future__ import print_function
 import csv
 import pandas as pd
@@ -29,18 +29,18 @@ def preprocessor(data):
 		hourVectorImg = math.sin(2*math.pi * (hours/24))		
 		dayVectorReal = math.cos(2*math.pi * (dayOfYear/365))
 		dayVectorImg = math.sin(2*math.pi * (dayOfYear/365))
-		copyData[i][0] = hourVectorReal 
-		copyData[i][1] = hourVectorImg 
-		copyData[i][2] = dayVectorReal 
-		copyData[i][3] = dayVectorImg
-		copyData[i][4] = sample[2]
-		copyData[i][5] = sample[3]
-		copyData[i][6] = sample[4]
-		copyData[i][7] = sample[5]
-		copyData[i][8] = sample[6]
-		copyData[i][9] = sample[7]
-		copyData[i][10] = sample[8]
-		copyData[i][11] = sample[9]
+		copyData[i][0] = hourVectorReal + 1
+		copyData[i][1] = (hourVectorImg + 1) / 2
+		copyData[i][2] = (dayVectorReal  + 1) / 2
+		copyData[i][3] = (dayVectorImg + 1) / 2
+		copyData[i][4] = float(sample[2])
+		copyData[i][5] = float(sample[3]) / 10
+		copyData[i][6] = float((sample[4])) + 19 / 55
+		copyData[i][7] = float((sample[5])) + 25 / 55
+		copyData[i][8] = float((sample[6])) + 15 / 120
+		copyData[i][9] = float(sample[7]) / 45
+		copyData[i][10] = float(sample[8]) / 40
+		copyData[i][11] = float(sample[9]) / 35
 	return copyData
 
 def categorizeLabels(labels):
@@ -59,7 +59,7 @@ def categorizeLabels(labels):
 
 def scaleLabels(labels):
 	for i in range(len(labels)):
-		labels[i] = [float(labels[i]) / 10000]
+		labels[i] = [float(labels[i]) / 4750]
 
 TrainingSetFeatures = preprocessor(TrainingSetFeatures)
 #categorizeLabels(TrainingSetLabels)
@@ -69,7 +69,8 @@ scaleLabels(TrainingSetLabels)
 #create a test set from the number of samples and traning set
 net = tflearn.input_data(shape=[None, 12])
 net = tflearn.fully_connected(net, 64)
-net = tflearn.fully_connected(net, 64)
+net = tflearn.fully_connected(net, 32)
+net = tflearn.fully_connected(net, 16)
 #net = tflearn.fully_connected(net, 5, activation="softmax")
 net = tflearn.fully_connected(net, 1, activation="relu")
 net = tflearn.regression(net, loss="mean_square")
@@ -80,20 +81,23 @@ net = tflearn.regression(net, loss="mean_square")
 model = tflearn.DNN(net)
 
 # Start training (apply gradient descent algorithm)
-model.fit(TrainingSetFeatures, TrainingSetLabels, n_epoch=2, batch_size=12, show_metric=True, validation_set=0.1)
+model.fit(TrainingSetFeatures, TrainingSetLabels, n_epoch=10, batch_size=12, show_metric=True, validation_set=0.1)
 
 # Let's create some data for DiCaprio and Winslet
-lowOutput =  [0, 0, 0, 0, 0, 9.92, 0.37, -0.01, 89.12, 4.72, 29.19, 29.98]
-highOutput = [0, 0, 0, 0, 0, 10, 6.16, 1.26, 68.96, 0, 29.26, 30.05]
-myOutput = [-0.8660254,-0.5,0.85207752,0.52341561,0.,10.,8.47,0.63,57.12,3.72,29.24,30.03]
+test = [[],[],[]]
+test[0] =  ["2/1/2016",6,0,9.92,0.37,-0.01,89.12,4.72,29.19,29.98,0]
+test[1] = ["7/18/2017",12,0,10,28.71,17.31,47.32,4.44,29.3,30.09,4568.75]
+test[2] = ["2/4/2016",8,0.3,10,-5.49,-8.8,74.57,11.88,29.46,30.26,1750.25]
 
-pred = model.predict([lowOutput, highOutput, myOutput])
+test = preprocessor(test)
+
+pred = model.predict(test)
 
 # find index
-lowOutputPrediction = pred[0].argmax()
-highOutputPrediction = pred[1].argmax()
-myOutputPrediction = pred[2].argmax()
+lowOutputPrediction = pred[0] * 4750
+highOutputPrediction = pred[1] * 4750
+myOutputPrediction = pred[2] * 4750
 
-print("lowoutput estimate:", lowOutputPrediction)
-print("highOutput estimate:", highOutputPrediction)
-print("myOutput estimate:", myOutputPrediction)
+print("Estimate:", lowOutputPrediction, "      Actual:", 0)
+print("Estimate:", highOutputPrediction, "      Actual:", 4568.75)
+print("Estimate:", myOutputPrediction, "      Actual:", 1750.25)
